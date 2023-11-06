@@ -68,6 +68,26 @@ async function run() {
       res.send(result)
     })
 
+    app.get("/my_added_food", async (req, res) => {
+      const email = req.query.email
+      const query = { buyer_email: email };
+      const result = await food_food_collection.find(query).toArray()
+      res.send(result)
+    })
+
+    app.post("/All_oder", async (req, res) => {
+      const data = req.body;
+      const result = await All_Oder.insertOne(data);
+      res.send(result)
+    })
+
+    app.get('/my_oder_food', async (req, res) => {
+      const email = req.query.email;
+      const query = { buyer_email : email };
+      const result = await All_Oder.find(query).toArray()
+      res.send(result)
+    } )
+
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // await client.close();
