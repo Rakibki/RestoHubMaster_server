@@ -31,6 +31,7 @@ async function run() {
 
     const database = client.db("DB_Restaurant_Management");
     const food_food_collection = database.collection("all_food");
+    const All_Oder = database.collection("All_Oder");
 
     app.get('/all_foods', async (req, res) => {
       const size = parseInt(req.query.size)
@@ -53,6 +54,17 @@ async function run() {
       console.log(id);
       const query = { _id: new ObjectId(id) };
       const result = await food_food_collection.findOne(query);
+      res.send(result)
+    })
+
+    app.get('/Top_Food', async (req, res) => {
+      const result = await food_food_collection.find().sort({ count: -1 }).limit(6).toArray()
+      res.send(result)
+    })
+
+    app.post('/add_food_item', async (req, res) => {
+      const data = req.body;
+      const result = await food_food_collection.insertOne(data);
       res.send(result)
     })
 
