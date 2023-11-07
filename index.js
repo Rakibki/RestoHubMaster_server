@@ -32,6 +32,7 @@ async function run() {
     const database = client.db("DB_Restaurant_Management");
     const food_food_collection = database.collection("all_food");
     const All_Oder = database.collection("All_Oder");
+    const Users = database.collection("Users");
 
     app.get('/all_foods', async (req, res) => {
       const size = parseInt(req.query.size)
@@ -75,7 +76,19 @@ async function run() {
       res.send(result)
     })
 
-    app.post("/All_oder", async (req, res) => {
+    app.post("/All_oder/:id", async (req, res) => {
+      const id = req.params.id;
+      const BuyFood = { _id: new ObjectId(id) };
+      const oderFood = await food_food_collection.findOne(BuyFood)
+
+      const updateDoc = {
+        $set: { 
+          count: oderFood?.count + 1
+        }
+      }
+      await food_food_collection.updateOne(BuyFood, updateDoc)
+
+
       const data = req.body;
       const result = await All_Oder.insertOne(data);
       res.send(result)
@@ -86,7 +99,20 @@ async function run() {
       const query = { buyer_email : email };
       const result = await All_Oder.find(query).toArray()
       res.send(result)
-    } )
+    })
+
+    app.delete("/my_Oder_food_delete/:id", async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) };
+      const result = await All_Oder.deleteOne(query);
+      res.send(result)
+    })
+
+    app.post('/users', async (req, res) => {
+      const user = req.body;
+      const result = await Users.insertOne(user);
+      res.send(result)
+    })
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
