@@ -39,11 +39,10 @@ const vavifyToken = (req, res, next) => {
 
   jwt.verify(token, process.env.secret, (error, decoded) => {
     if(error) {
-      return res.status(401).send("unauthorized")
-    }else {
-      req.user = decoded
-      next()
+      return res.status(402).send("unauthorized")
     }
+    req.user = decoded
+    next()
   })
 }
 
@@ -86,7 +85,6 @@ async function run() {
 
     app.get('/product_details/:id', async (req, res) => {
       const id = req.params.id;
-      console.log(id);
       const query = { _id: new ObjectId(id) };
       const result = await food_food_collection.findOne(query);
       res.send(result)
@@ -104,15 +102,14 @@ async function run() {
     })
 
     app.get("/my_added_food", vavifyToken, async (req, res) => {
-
       const email = req.query.email
 
       if(req.user.userEmail.email !== email) {
         return res.status(403).send("unauthorized")
       }
 
-      const query = { buyer_email: email };
-      const result = await food_food_collection.find(query).toArray()
+      const filter = { buyer_email: email };
+      const result = await food_food_collection.find(filter).toArray()
       res.send(result)
     })
 
@@ -135,15 +132,17 @@ async function run() {
 
     app.get('/my_oder_food', vavifyToken, async (req, res) => {
       const email = req.query.email;
+      
       if(req.user.userEmail.email !== email) {
-        return res.status(403).send("unauthorizedd")
+        return res.status(403).send("unauthorized")
       }
+
       const query = { buyer_email : email };
       const result = await All_Oder.find(query).toArray()
       res.send(result)
     })
 
-    app.delete("/my_Oder_food_delete/:id", async (req, res) => {
+    app.delete("/my_Oder_food_delete/:id", async(req, res) => {
       const id = req.params.id
       const query = { _id: new ObjectId(id) };
       const result = await All_Oder.deleteOne(query);
@@ -192,7 +191,6 @@ async function run() {
         sameSite: 'none'
       })
       res.send({success: true})
-      console.log(token);
     })
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
