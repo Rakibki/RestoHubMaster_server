@@ -3,12 +3,17 @@ const cors = require('cors')
 const port = process.env.PORT || 5000 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
-
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser')
 
 const app = express()
 
 app.use(express.json())
-app.use(cors())
+app.use(cookieParser())
+app.use(cors({
+  origin: ['http://localhost:5173'],
+  credentials: true
+}))
 
 
 app.get('/', (req, res) => {
@@ -25,6 +30,23 @@ const client = new MongoClient(uri, {
   }
 });
 
+
+const vavifyToken = (req, res, next) => {
+  const token = req?.cookies?.token;
+  if(!token) {
+    return res.status(401).send("unauthorized")
+  }
+
+  jwt.verify(token, process.env.secret, (error, decoded) => {
+    if(error) {
+      return res.status(401).send("unauthorized")
+    }else {
+      req.user = decoded
+      next()
+    }
+  })
+}
+
 async function run() {
   try {
     await client.connect();
@@ -37,8 +59,20 @@ async function run() {
     app.get('/all_foods', async (req, res) => {
       const size = parseInt(req.query.size)
       const page = parseInt(req.query.page)
+      const sort = req.query.sort
+      const searchValue = req.query.searchValue
 
-      const result = await food_food_collection.find()
+      const minValue = req.query.minValue
+      const maxvalue = req.query.maxvalue
+
+
+      let searchFilter = {}
+      if(searchValue) {
+        searchFilter['category'] = searchValue
+      }
+
+      const result = await food_food_collection.find(searchFilter)
+      .sort({Price: sort })
       .skip(page * size)
       .limit(size)
       .toArray()
@@ -69,8 +103,14 @@ async function run() {
       res.send(result)
     })
 
-    app.get("/my_added_food", async (req, res) => {
+    app.get("/my_added_food", vavifyToken, async (req, res) => {
+
       const email = req.query.email
+
+      if(req.user.userEmail.email !== email) {
+        return res.status(403).send("unauthorized")
+      }
+
       const query = { buyer_email: email };
       const result = await food_food_collection.find(query).toArray()
       res.send(result)
@@ -88,14 +128,16 @@ async function run() {
       }
       await food_food_collection.updateOne(BuyFood, updateDoc)
 
-
       const data = req.body;
       const result = await All_Oder.insertOne(data);
       res.send(result)
     })
 
-    app.get('/my_oder_food', async (req, res) => {
+    app.get('/my_oder_food', vavifyToken, async (req, res) => {
       const email = req.query.email;
+      if(req.user.userEmail.email !== email) {
+        return res.status(403).send("unauthorizedd")
+      }
       const query = { buyer_email : email };
       const result = await All_Oder.find(query).toArray()
       res.send(result)
@@ -112,6 +154,45 @@ async function run() {
       const user = req.body;
       const result = await Users.insertOne(user);
       res.send(result)
+    })
+
+    app.put("/my_food_update/:id", async (req, res) => {
+      const data = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+
+      const updateDoc = {
+        $set: {
+          Food_Name: data.Food_Name,
+          Quentity: data.Quentity,
+          Food_Origin: data.Food_Origin,
+          image_URL: data.image_URL,
+          Categoty: data.Categoty,
+          Price: data.Price
+        },
+      };
+      const result = await food_food_collection.updateOne(filter, updateDoc);
+      res.send(result)
+    })
+
+    app.delete("/my_food_delete/:id", async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) };
+      const result = await food_food_collection.deleteOne(query);
+      res.send(result)
+    })
+
+    app.post('/jwt', (req, res) => {
+      const userEmail = req.body;
+
+      const token = jwt.sign({userEmail}, process.env.secret, { expiresIn: '1h' });
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none'
+      })
+      res.send({success: true})
+      console.log(token);
     })
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
