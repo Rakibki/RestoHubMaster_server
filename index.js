@@ -11,17 +11,22 @@ const app = express()
 app.use(express.json())
 app.use(cookieParser())
 app.use(cors({
-  origin: ['http://localhost:5173'],
+  origin: [
+    'https://restaurant-management-931c4.firebaseapp.com',
+    'http://localhost:5173',
+    'https://server-rakibki.vercel.app', 
+    'https://restaurant-management-931c4.web.app'
+  ],
   credentials: true
 }))
 
 
 app.get('/', (req, res) => {
-    res.send("server is running")
+    res.send("server is running 2222")
 })
 
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.sinogwr.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://Restaurant_Management:9kP1hmQ8tqXlRzz8@cluster0.sinogwr.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
