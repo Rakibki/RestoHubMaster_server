@@ -8,23 +8,24 @@ const cookieParser = require('cookie-parser')
 
 const app = express()
 
-app.use(express.json())
-app.use(cookieParser())
 app.use(cors({
   origin: [
-    'https://restaurant-management-931c4.firebaseapp.com',
     'http://localhost:5173',
+    'https://restaurant-management-931c4.firebaseapp.com',
     'https://server-rakibki.vercel.app', 
-    'https://restaurant-management-931c4.web.app'
+    'https://restaurant-management-931c4.web.app',
+    'https://wet-scale.surge.sh',
+    'assorted-part.surge.sh'
   ],
   credentials: true
 }))
 
+app.use(express.json())
+app.use(cookieParser())
 
 app.get('/', (req, res) => {
     res.send("server is running 2222")
 })
-
 
 const uri = `mongodb+srv://Restaurant_Management:9kP1hmQ8tqXlRzz8@cluster0.sinogwr.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
@@ -34,6 +35,7 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+
 
 
 const vavifyToken = (req, res, next) => {
@@ -53,12 +55,26 @@ const vavifyToken = (req, res, next) => {
 
 async function run() {
   try {
-    await client.connect();
 
     const database = client.db("DB_Restaurant_Management");
     const food_food_collection = database.collection("all_food");
     const All_Oder = database.collection("All_Oder");
     const Users = database.collection("Users");
+    const TableBooks = database.collection("TableBooks");
+
+    app.post("/addAbookTable", async (req, res) => {
+      const bookData = req.body
+      const result = await TableBooks.insertOne(bookData)
+      res.send(result)
+    })
+
+    app.get("/myBookTable/:email", async (req, res) => {
+      const email = req.params.email
+      const filter = {email: email}
+      console.log(email);
+      const result = await TableBooks.find(filter).toArray()
+      res.send(result)
+    })
 
     app.get('/all_foods', async (req, res) => {
       const size = parseInt(req.query.size)
