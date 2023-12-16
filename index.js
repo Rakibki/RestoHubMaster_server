@@ -221,10 +221,24 @@ async function run() {
 
     app.post('/users', async (req, res) => {
       const user = req.body;
-      const result = await Users.insertOne(user);
-      res.send(result)
+      const filter = {email: user?.email};
+      const isExting = await Users.findOne(filter);
+      if(isExting) {
+        return res.send({message: "Already userd Email"})
+      }else {
+        const result = await Users.insertOne(user);
+        res.send(result)
+      }
     })
 
+   app.get("/getRole/:email", async(req, res) => {
+    const email = req?.params?.email;
+    const filter = {email: email}
+    const user = await Users.findOne(filter)
+    const role = {role: user?.role}
+    res.send({role})
+  })
+     
     app.put("/my_food_update/:id", async (req, res) => {
       const data = req.body;
       const id = req.params.id;
