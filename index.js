@@ -277,6 +277,11 @@ async function run() {
       res.send({success: true})
     })
 
+    app.get("/foods", async(req, res) => {
+      const result = await food_food_collection.find().toArray();
+      res.send(result)
+    })
+
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // await client.close();
