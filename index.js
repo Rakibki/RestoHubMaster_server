@@ -5,26 +5,15 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser')
-
 const app = express()
 
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://restaurant-management-931c4.firebaseapp.com',
-    'https://server-rakibki.vercel.app', 
-    'https://restaurant-management-931c4.web.app',
-    'https://wet-scale.surge.sh',
-    'assorted-part.surge.sh'
-  ],
-  credentials: true
-}))
 
 app.use(express.json())
 app.use(cookieParser())
 
+
 app.get('/', (req, res) => {
-    res.send("server is running 2222")
+    res.send("RestrohubMaster server is running")
 })
 
 const uri = `mongodb+srv://Restaurant_Management:9kP1hmQ8tqXlRzz8@cluster0.sinogwr.mongodb.net/?retryWrites=true&w=majority`;
@@ -36,7 +25,21 @@ const client = new MongoClient(uri, {
   }
 });
 
-
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:5000',
+    'https://obnoxious-value.surge.sh',
+    'https://some-sandy.vercel.app',
+    'https://server-khaki-eight.vercel.app',
+    'https://restaurant-management-931c4.firebaseapp.com',
+    'https://server-rakibki.vercel.app', 
+    'https://restaurant-management-931c4.web.app',
+    'https://wet-scale.surge.sh',
+    'assorted-part.surge.sh'
+  ],
+  credentials: true
+}))
 
 const vavifyToken = (req, res, next) => {
   const token = req?.cookies?.token;
@@ -61,6 +64,52 @@ async function run() {
     const All_Oder = database.collection("All_Oder");
     const Users = database.collection("Users");
     const TableBooks = database.collection("TableBooks");
+    const cards = database.collection("Cards");
+
+
+    app.post('/card', async (req, res) => {
+      const food = req.body;
+      const result = await cards.insertOne(food)
+      res.send(result)
+    })
+
+    app.get("/myCardLength/:email", async (req, res) => {
+      const email = req.params.email
+      const filter = {email: email};
+      const result = await cards.estimatedDocumentCount(filter)
+      res.send({result}) 
+    })
+
+    app.delete("/myCard/:id", async (req, res) => {
+      const foodId = req.params?.id;
+      const filter = {_id: new ObjectId(foodId)}
+      const result = await cards.deleteOne(filter)
+      res.send(result)
+    })
+
+    app.get("/myCard/:email", async (req, res) => {
+      const email = req?.params?.email
+      const filter = {email: email};
+      const result = await cards.find(filter).toArray();
+      res.send(result)
+    })
+
+    app.put("/subscribers", async(req, res) => {
+      const data = req.body;
+      const filter = {email: data?.email}
+      const user = await Users.findOne(filter)
+      if(!user) {
+        return res.send("something")
+      }
+      const options = {upsert: true};
+      const updateDocument = {
+        $set: {
+          ...user,
+          subscribers: true
+        }
+      };
+      const result = await Users.findOneAndUpdate(filter, updateDocument, options)
+    })
 
     app.post("/addAbookTable", async (req, res) => {
       const bookData = req.body
@@ -122,12 +171,12 @@ async function run() {
       res.send(result)
     })
 
-    app.get("/my_added_food", vavifyToken, async (req, res) => {
+    app.get("/my_added_food", async (req, res) => {
       const email = req.query.email
 
-      if(req.user.userEmail.email !== email) {
-        return res.status(403).send("unauthorized")
-      }
+      // if(req.user.userEmail.email !== email) {
+      //   return res.status(403).send("unauthorized")
+      // }
 
       const filter = { buyer_email: email };
       const result = await food_food_collection.find(filter).toArray()
@@ -151,12 +200,12 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/my_oder_food', vavifyToken, async (req, res) => {
+    app.get('/my_oder_food', async (req, res) => {
       const email = req.query.email;
       
-      if(req.user.userEmail.email !== email) {
-        return res.status(403).send("unauthorized")
-      }
+      // if(req.user.userEmail.email !== email) {
+      //   return res.status(403).send("unauthorized")
+      // }
 
       const query = { buyer_email : email };
       const result = await All_Oder.find(query).toArray()
