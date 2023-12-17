@@ -6,7 +6,7 @@ require('dotenv').config()
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser')
 const app = express()
-const stripe = require("stripe")('pk_test_51OO1NxG080f7o8Kk2MTdrbRA00yqAw6d0W8dDvhsuHihZB1lNr4n61aXHliFKRapYp8WJ00TuZmmhq0gguQZkT8z00JlXMyU1k');
+const stripe = require("stripe")('sk_test_51OO1NxG080f7o8KkvbRUkThpwIKzih0JvPovvB2JGvu1lyQnEk3wIEhl4KyZdl8n1r73dFcnHhwUZ6gzI1UCNV5v00u0VNhW9t');
 
 
 app.use(express.json())
@@ -42,20 +42,7 @@ app.use(cors({
   credentials: true
 }))
 
-// stripe start
-app.post("/create-payment", async (req, res) => {
-  const { price } = req.body;
-  const ammout = parseInt(price * 100) 
-  const paymentIntent = await stripe.paymentIntent.create({
-    amount: ammout,
-    currency: "usd",
-    payment_method_types: ["card"],
-  })
-  res.send({
-    clientSecret: paymentIntent.client_secret,
-  });
-})
-// stripe end
+
 
 const vavifyToken = (req, res, next) => {
   const token = req?.cookies?.token;
@@ -81,7 +68,53 @@ async function run() {
     const Users = database.collection("Users");
     const TableBooks = database.collection("TableBooks");
     const cards = database.collection("Cards");
+    const Payments = database.collection("Payments");
 
+
+
+    // stripe start
+  app.post("/createPayment", async (req, res) => {
+  const { price } = req.body;
+  const ammout = parseInt(price * 100) 
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: ammout,
+    currency: "usd",
+    payment_method_types: ["card"],
+  })
+    res.send({
+    clientSecret: paymentIntent.client_secret,
+   });
+  })
+
+  app.post("/payment", async(req, res) => {
+    const paymentInfo = req.body;
+    const result = await Payments.insertOne(paymentInfo)
+    res.send(result)
+  })
+
+
+// stripe end
+
+    app.get("/myPaymentHistory/:email", async(req, res) => {
+      const email = req.params.email;
+      const filter = {email: email}
+      const result = await Payments.find(filter).toArray()
+      res.send(result)
+    })
+
+    app.get("/user/:email", async(req, res) => {
+      const email = req.params.email;
+      console.log("fiit");
+      console.log(email);
+      const filter = {email: email}
+      const result = await Users.findOne(filter)
+      res.send(result)
+    })
+
+    app.get("/allOders", async(req, res) => {
+      const result = await Payments.find().toArray()
+      res.send(result)
+    })
 
     app.post('/card', async (req, res) => {
       const food = req.body;
