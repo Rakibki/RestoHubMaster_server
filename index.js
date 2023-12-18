@@ -8,6 +8,11 @@ const cookieParser = require('cookie-parser')
 const app = express()
 const stripe = require("stripe")('sk_test_51OO1NxG080f7o8KkvbRUkThpwIKzih0JvPovvB2JGvu1lyQnEk3wIEhl4KyZdl8n1r73dFcnHhwUZ6gzI1UCNV5v00u0VNhW9t');
 
+// const formData = require('form-data');
+// const Mailgun = require('mailgun.js');
+// const mailgun = new Mailgun(formData);
+// const mg = mailgun.client({username: 'api', key: "70cea413afcac4dcbcba5427e206b75c-07f37fca-3d303d39"});
+
 
 app.use(express.json())
 app.use(cookieParser())
@@ -61,7 +66,6 @@ const vavifyToken = (req, res, next) => {
 
 async function run() {
   try {
-
     const database = client.db("DB_Restaurant_Management");
     const food_food_collection = database.collection("all_food");
     const All_Oder = database.collection("All_Oder");
@@ -69,7 +73,7 @@ async function run() {
     const TableBooks = database.collection("TableBooks");
     const cards = database.collection("Cards");
     const Payments = database.collection("Payments");
-
+    const wishList = database.collection("wishList");
 
 
     // stripe start
@@ -86,19 +90,52 @@ async function run() {
    });
   })
 
+
+  // const messageData = {
+  //   from: 'rbepari404@gmail.com',
+  //   to: 'rbepari404@gmail.com',
+  //   subject: 'Hello',
+  //   text: 'Your payment is successful!'
+  // };
+
   app.post("/payment", async(req, res) => {
+    // const mg = mailgun.client({
+    //   username: 'api',
+    //   key: "70cea413afcac4dcbcba5427e206b75c-07f37fca-3d303d39" || '',
+    //   public_key: process.env.MAILGUN_PUBLIC_KEY || 'pubkey-yourkeyhere'
+    // });
+
     const paymentInfo = req.body;
     const result = await Payments.insertOne(paymentInfo)
     res.send(result)
   })
 
-
 // stripe end
+
+
+  app.post('/withList/:email', async(req, res) => {
+    const food = req.body;
+    const email = req.params.email;
+    const data = {
+      ...food,
+      email: email
+    }
+    const result = await wishList.insertOne(data)
+    res.send(result)
+  })
+
 
     app.get("/myPaymentHistory/:email", async(req, res) => {
       const email = req.params.email;
       const filter = {email: email}
       const result = await Payments.find(filter).toArray()
+      res.send(result)
+    })
+
+    app.get("/myWishList/:email", async(req, res) => {
+      const email = req.params.email;
+      const filter = {email: email}
+      const result = await wishList.find(filter).toArray()
       res.send(result)
     })
 
@@ -127,6 +164,13 @@ async function run() {
       const filter = {email: email};
       const result = await cards.estimatedDocumentCount(filter)
       res.send({result}) 
+    })
+
+    app.delete("/myWishList/:id", async (req, res) => {
+      const id = req?.params?.id;
+      const filter = {_id: id}
+      const result = await wishList.deleteOne(filter)
+      res.send(result)
     })
 
     app.delete("/myCard/:id", async (req, res) => {
@@ -331,9 +375,18 @@ async function run() {
       res.send(result)
     })
 
+    app.get("/ManageTable", async(req, res) => {
+      const result = await TableBooks.find().toArray();
+      res.send(result)
+    })
+
     app.get("/customers", async(req, res) => {
       const result = await Users.find().toArray();
       res.send(result)
+    })
+
+    app.get("/adminHome", async (req, res) => {
+      
     })
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
