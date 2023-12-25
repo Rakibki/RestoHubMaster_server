@@ -91,15 +91,19 @@ async function run() {
   })
 
 
-  app.post("/payment", async(req, res) => {
+  app.post("/payment/:email", async(req, res) => {
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const email = req.params?.email
     const date = req.body;
     const paymentInfo = {
       ...date,
       paymentDay: daysOfWeek[new Date().getDay()]
     }
-    const result = await Payments.insertOne(paymentInfo)
-    res.send(result)
+    const options = {upsert: true};
+    const result1 = await Payments.insertOne(paymentInfo)
+
+    const result2 = await Users.findOneAndUpdate({email: email},  { $inc: { oder: 1 } }, options)
+    res.send({result1, result2})
   })
 
 // stripe end
@@ -133,8 +137,6 @@ async function run() {
 
     app.get("/user/:email", async(req, res) => {
       const email = req.params.email;
-      console.log("fiit");
-      console.log(email);
       const filter = {email: email}
       const result = await Users.findOne(filter)
       res.send(result)
@@ -310,6 +312,7 @@ async function run() {
       const data = req.body;
       const user = {
         ...data,
+        oder: 0,
         createIt: new Date().toDateString(),
         createDay: daysOfWeek[new Date().getDay()]
       }
@@ -466,6 +469,25 @@ async function run() {
         deliveryDate: date
       }
     }, options)
+    res.send(result)
+  })
+
+  app.delete("/food-delete/:id", async(req, res) => {
+    const id = req.params.id;
+    const filter = {_id: new ObjectId(id)}
+    const result = await food_food_collection.deleteOne(filter)
+    res.send(result)
+  })
+
+  app.put("/update-food/:id", async(req ,res) => {
+    const foodInfo = req.body;
+    const foodId = req.params.id
+    const result = await food_food_collection.findOneAndUpdate({_id: new ObjectId(foodId)}, {$set: {
+      Food_name: foodInfo?.Food_Name,
+      Price: foodInfo?.Price,
+      quectity: foodInfo?.Quentity,
+      category: foodInfo?.Categoty
+    }})
     res.send(result)
   })
 
