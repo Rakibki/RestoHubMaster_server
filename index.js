@@ -91,21 +91,13 @@ async function run() {
   })
 
 
-  // const messageData = {
-  //   from: 'rbepari404@gmail.com',
-  //   to: 'rbepari404@gmail.com',
-  //   subject: 'Hello',
-  //   text: 'Your payment is successful!'
-  // };
-
   app.post("/payment", async(req, res) => {
-    // const mg = mailgun.client({
-    //   username: 'api',
-    //   key: "70cea413afcac4dcbcba5427e206b75c-07f37fca-3d303d39" || '',
-    //   public_key: process.env.MAILGUN_PUBLIC_KEY || 'pubkey-yourkeyhere'
-    // });
-
-    const paymentInfo = req.body;
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const date = req.body;
+    const paymentInfo = {
+      ...date,
+      paymentDay: daysOfWeek[new Date().getDay()]
+    }
     const result = await Payments.insertOne(paymentInfo)
     res.send(result)
   })
@@ -162,7 +154,7 @@ async function run() {
     app.get("/myCardLength/:email", async (req, res) => {
       const email = req.params.email
       const filter = {email: email};
-      const result = await cards.estimatedDocumentCount(filter)
+      const result = await cards.countDocuments(filter)
       res.send({result}) 
     })
 
@@ -258,6 +250,7 @@ async function run() {
       res.send(result)
     })
 
+
     app.post('/add_food_item', async (req, res) => {
       const data = req.body;
       const result = await food_food_collection.insertOne(data);
@@ -313,7 +306,13 @@ async function run() {
     })
 
     app.post('/users', async (req, res) => {
-      const user = req.body;
+      const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const data = req.body;
+      const user = {
+        ...data,
+        createIt: new Date().toDateString(),
+        createDay: daysOfWeek[new Date().getDay()]
+      }
       const filter = {email: user?.email};
       const isExting = await Users.findOne(filter);
       if(isExting) {
@@ -386,8 +385,89 @@ async function run() {
     })
 
     app.get("/adminHome", async (req, res) => {
-      
+      const payments = await Payments.find().toArray()
+      const revenues = payments.reduce((acc, curr) => acc + curr?.totalPrice, 0)
+      const foods = await food_food_collection.estimatedDocumentCount();
+      const customers = await Users.estimatedDocumentCount();
+      const oders = await Payments.estimatedDocumentCount();
+      res.send({revenues, foods, customers, oders})
     })
+
+
+    app.get("/foodChrt", async (req, res) => {
+      const Appetizers = await food_food_collection.countDocuments({category: 'Appetizers'})
+      const Breakfast = await food_food_collection.countDocuments({category: 'Breakfast'})
+      const Desserts = await food_food_collection.countDocuments({category: 'Desserts'})
+      const FamilyDishes = await food_food_collection.countDocuments({category: 'Family Dishes'})
+      res.send({Appetizers, Breakfast, Desserts, FamilyDishes});
+    })
+
+    
+  app.get("/topFiveTransactions", async (req, res) => {
+    const result = await Payments.find().sort({_id: -1}).limit(5).toArray()
+    res.send(result)
+  })
+
+  app.get("/dayAnalytics", async (req, res) => {
+    const userSunday = await Users.countDocuments({'createDay': 'Sunday'})
+    const userMonday = await Users.countDocuments({'createDay': 'Monday'})
+    const userTuesday = await Users.countDocuments({'createDay': 'Tuesday'})
+    const userWednesday = await Users.countDocuments({'createDay': 'Wednesday'})
+    const userThursday = await Users.countDocuments({'createDay': 'Thursday'})
+    const userFriday = await Users.countDocuments({'createDay': 'Friday'})
+    const userSaturday = await Users.countDocuments({'createDay': 'Saturday'})
+
+    const paymentSunday = await Payments.countDocuments({'paymentDay': 'Sunday'})
+    const paymentMonday = await Payments.countDocuments({'paymentDay': 'Monday'})
+    const paymentTuesday = await Payments.countDocuments({'paymentDay': 'Tuesday'})
+    const paymentWednesday = await Payments.countDocuments({'paymentDay': 'Wednesday'})
+    const paymentThursday = await Payments.countDocuments({'paymentDay': 'Thursday'})
+    const paymentFriday = await Payments.countDocuments({'paymentDay': 'Friday'})
+    const paymentSaturday = await Payments.countDocuments({'paymentDay': 'Saturday'})
+    
+    const userResigterDay = {userSunday, userMonday, userTuesday, userWednesday, userThursday, userFriday, userSaturday}
+    const oderDay = {paymentSaturday, paymentFriday, paymentThursday, paymentWednesday, paymentTuesday, paymentMonday, paymentSunday}
+
+    res.send({userResigterDay, oderDay})
+  })
+
+  app.get("/categoryFoodQuentity", async (req, res) => {
+    const Appetizers = await food_food_collection.countDocuments({category: 'Appetizers'})
+    const Breakfast = await food_food_collection.countDocuments({category: 'Breakfast'})
+    const Desserts = await food_food_collection.countDocuments({category: 'Desserts'})
+    const FamilyDishes = await food_food_collection.countDocuments({category: 'Family Dishes'})
+    res.send({Appetizers, Breakfast, Desserts, FamilyDishes})
+  })
+
+  app.get("/AllDelivaryMan", async (req, res) => {
+    const filter = {role: 'deliveryMan'}
+    const result = await Users.find(filter).toArray();
+    res.send(result)
+  })
+
+  app.delete("/oder/:id", async (req, res) => {
+    const id = req.params?.id;
+    const filter = {_id: new ObjectId(id)}
+    const result = await Payments.deleteOne(filter)
+    res.send(result)
+  })
+
+  app.put("/selectDelivaryMan", async(req, res) => {
+    const deliveryManId = req.query?.selectedDeliverManId;
+    const selectOderId = req.query?.selectOderId;
+    const date = req.query?.date;
+
+    const options = { upsert: true };
+    const filter = {_id: new ObjectId(selectOderId)}
+    const result = await Payments.findOneAndUpdate(filter, {
+      $set: {
+        status: "On The Way",
+        deviveryManId: deliveryManId,
+        deliveryDate: date
+      }
+    }, options)
+    res.send(result)
+  })
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
