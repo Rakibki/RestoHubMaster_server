@@ -501,6 +501,31 @@ async function run() {
     res.send(result)
   })
 
+
+  app.put('/delivery-list/:id', async(req, res) => {
+    const foodId = req.params.id;
+    const filter = {_id: new ObjectId(foodId)}
+    const result = await Payments?.findOneAndUpdate(filter, {
+      $set: {
+        deviveryManId: null,
+        status: "cancel"
+      }
+    });
+    res.send(result)
+  })
+
+  app.put('/namageDeliveryList/:id', async(req, res) => {
+    const id = req.params.id;
+    const filter = {_id: new ObjectId(id)}
+    console.log(filter);
+    const result = await Payments.findOneAndUpdate(filter, {
+      $set: {
+        status: 'diliverd'
+      }
+    })
+    res.send(result)
+  })
+
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // await client.close();
