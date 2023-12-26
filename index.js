@@ -290,10 +290,6 @@ async function run() {
 
     app.get('/my_oder_food', async (req, res) => {
       const email = req.query.email;
-      
-      // if(req.user.userEmail.email !== email) {
-      //   return res.status(403).send("unauthorized")
-      // }
 
       const query = { buyer_email : email };
       const result = await All_Oder.find(query).toArray()
@@ -303,7 +299,7 @@ async function run() {
     app.delete("/my_Oder_food_delete/:id", async(req, res) => {
       const id = req.params.id
       const query = { _id: new ObjectId(id) };
-      const result = await All_Oder.deleteOne(query);
+      const result = await Payments.deleteOne(query);
       res.send(result)
     })
 
@@ -316,7 +312,7 @@ async function run() {
         createIt: new Date().toDateString(),
         createDay: daysOfWeek[new Date().getDay()]
       }
-      const filter = {email: user?.email};
+      const filter = {email: data?.email};
       const isExting = await Users.findOne(filter);
       if(isExting) {
         return res.send({message: "Already userd Email"})
@@ -464,7 +460,7 @@ async function run() {
     const filter = {_id: new ObjectId(selectOderId)}
     const result = await Payments.findOneAndUpdate(filter, {
       $set: {
-        status: "On The Way",
+        status: "OnTheWay",
         deviveryManId: deliveryManId,
         deliveryDate: date
       }
@@ -488,6 +484,20 @@ async function run() {
       quectity: foodInfo?.Quentity,
       category: foodInfo?.Categoty
     }})
+    res.send(result)
+  })
+
+  app.delete("/table/:id", async(req, res) => {
+    const id = req?.params?.id;
+    const filter = {_id: new ObjectId(id)}
+    const result = await TableBooks.deleteOne(filter)
+    res.send(result)
+  })
+
+  app.get('/delivery-list/:id', async(req, res) => {
+    const deliveryManId = req?.params?.id;
+    const filter = {deviveryManId: deliveryManId}
+    const result = await Payments.find(filter).toArray();
     res.send(result)
   })
 
