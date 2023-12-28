@@ -240,6 +240,11 @@ async function run() {
       res.send({result})
     })
 
+    app.get('/all_Customer', async (req, res) => {
+      const result = await Users.estimatedDocumentCount()
+      res.send({result})
+    })
+
     app.get('/product_details/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -369,7 +374,9 @@ async function run() {
     })
 
     app.get("/foods", async(req, res) => {
-      const result = await food_food_collection.find().toArray();
+      const size = parseInt(req.query.size)
+      const page = parseInt(req.query.page)
+      const result = await food_food_collection.find().skip(page * size).limit(size).toArray();
       res.send(result)
     })
 
@@ -379,7 +386,10 @@ async function run() {
     })
 
     app.get("/customers", async(req, res) => {
-      const result = await Users.find().toArray();
+      const size = parseInt(req.query.size)
+      const page = parseInt(req.query.page)
+      console.log(size, page);
+      const result = await Users.find().skip(page * size).limit(size).toArray();
       res.send(result)
     })
 
